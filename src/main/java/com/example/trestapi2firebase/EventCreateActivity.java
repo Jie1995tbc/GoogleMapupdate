@@ -40,9 +40,6 @@ import java.util.List;
 import java.util.Map;
 
 public class EventCreateActivity extends AppCompatActivity implements View.OnClickListener, DatePicker.OnDateChangedListener, TimePicker.OnTimeChangedListener {
-
-//    private Time time;
-
     private Context context;
     private LinearLayout llDate, llTime, ll1Date, ll1Time;
     private TextView tvDate, tvTime, tv1Date, tv1Time;
@@ -50,27 +47,28 @@ public class EventCreateActivity extends AppCompatActivity implements View.OnCli
     private int year, month, day, hour, minute;
     //display on textview
     private StringBuffer date, time;
+    ///////////////////////
+    private String startDate;
+    private String startTime;
+    private String endDate;
+    private String endTime;
     ////////////////////////
-    private static final String TAG = "EVENTCREATE";
-    private static final String KEY_TITLE = "CreateEvent";
-    private static final String KEY_LOCATION = "Location";
-    private static final String KEY_QUANTITY = "Quantity";
-    private static final String KEY_PRICE = "Price";
-    private static final String KEY_DESCRIPTION = "Description";
-    private static final String KEY_START_DATE = "Start Date";
-    private static final String KEY_START_TIME = "Start Time";
-    private static final String KEY_END_DATE = "End Date";
-    private static final String KEY_END_TIME = "End Time";
-
-    private static final String KEY_CURRENCY = "Currency";
+//    private static final String TAG = "EVENTCREATE";
+//    private static final String KEY_TITLE = "CreateEvent";
+//    private static final String KEY_LOCATION = "Location";
+//    private static final String KEY_QUANTITY = "Quantity";
+//    private static final String KEY_PRICE = "Price";
+//    private static final String KEY_DESCRIPTION = "Description";
+//    private static final String KEY_START_DATE = "Start Date";
+//    private static final String KEY_START_TIME = "Start Time";
+//    private static final String KEY_END_DATE = "End Date";
+//    private static final String KEY_END_TIME = "End Time";
+//
+//    private static final String KEY_CURRENCY = "Currency";
 
     private EditText edit_event_title, edit_location, edit_description, edit_quantity, edit_price;
     private Button button;
     private FirebaseFirestore db = FirebaseFirestore.getInstance();
-
-
-    ///////////////////////
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -82,12 +80,6 @@ public class EventCreateActivity extends AppCompatActivity implements View.OnCli
         time = new StringBuffer();
         initView();
         initDateTime();
-
-        ////////////////////////////////////////////////////////////////
-
-
-
-
     }
 
     private void initDateTime() {
@@ -134,27 +126,7 @@ public class EventCreateActivity extends AppCompatActivity implements View.OnCli
         String end_date = tv1Date.getText().toString();
         String end_time = tv1Time.getText().toString();
 
-        Map<String,Object> note = new HashMap<>();
-        note.put(KEY_TITLE,event_title);
-        note.put(KEY_LOCATION,location);
-        note.put(KEY_DESCRIPTION,description);
-        note.put(KEY_QUANTITY,quantity);
-        note.put(KEY_PRICE,price);
-        note.put(KEY_START_DATE,start_date);
-        note.put(KEY_START_TIME,start_time);
-        note.put(KEY_END_DATE,end_date);
-        note.put(KEY_END_TIME,end_time);
-        note.put(KEY_CURRENCY, "USD");
 
-
-//
-//        SmallCity smallCity = new SmallCity("Peter", "4/19/20");
-
-
-//
-//        City city = new City(null, "CA", "USA",
-//                false, 5000000L, Arrays.asList("west_coast", "sorcal"),smallCity);
-//        db.collection("cities").document("LA").set(city);
         String[] tagArray = {"hello", "hi"};
         List<String> tag = Arrays.asList(tagArray);
 
@@ -163,7 +135,7 @@ public class EventCreateActivity extends AppCompatActivity implements View.OnCli
                 "U.S","-43.316","-56.657",null,null,tag);
         Venue venue = new Venue(address,null,null,"2197864","-34.618","-68.334","Los","http://github.com");
 
-        Start start = new Start("2019-11-24T10:00:00","America","2019-11-24");
+        Start start = new Start(startDate + "T" + startTime,"America","2019-11-24");
 
         Text name = new Text("html","text");
 
@@ -175,17 +147,28 @@ public class EventCreateActivity extends AppCompatActivity implements View.OnCli
 
         Logo logo = new Logo("2",cropMask,"#989b72",true,"76264781",original,"http://github.com");
 
-        End end = new End("2019-11-24T 13:00:00","America","2019-11-24T 16:00:00Z");
+        End end = new End(endDate + "T" + endTime,"America","2019-11-24T 16:00:00Z");
 
-/// Description1 need change to description
         Text description1 = new Text("html","text");
 
         Event event = new Event(name,description1,"23452134","http://",start,end,null,null,null,null,14,false,
                 "continue","USD",false,false,false,45,false,false,"Boston",false,"set",false,false,"invest",
-                false,false,false,false,"Boston",false,"3.0","summary","34567123","2341234","231424","231234","1234",
+                false,false,false,false,"Boston",false,"3.0","summary","34567123","2341234","231424",null,"1234",
                 "87964","http://",false,venue,logo);
 
-        db.collection("user").document("EventCreate").set(event);
+        db.collection("user").document("EventCreate").set(event)
+                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void aVoid) {
+                        Toast.makeText(EventCreateActivity.this,"Save",Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Toast.makeText(EventCreateActivity.this,"Error!",Toast.LENGTH_SHORT).show();
+                    }
+                });
 
     }
 
@@ -202,6 +185,7 @@ public class EventCreateActivity extends AppCompatActivity implements View.OnCli
                             date.delete(0, date.length());
                         }
                         tvDate.setText(date.append((month)).append("/").append(day).append("/").append(year));
+                        startDate = year + "-" + month + "-" + day;
                         dialog.dismiss();
                     }
                 });
@@ -231,6 +215,8 @@ public class EventCreateActivity extends AppCompatActivity implements View.OnCli
                             date.delete(0, date.length());
                         }
                         tv1Date.setText(date.append((month)).append("/").append(day).append("/").append(year));
+                        endDate = year + "-" + month + "-" + day;
+
                         dialog.dismiss();
                     }
                 });
@@ -260,6 +246,7 @@ public class EventCreateActivity extends AppCompatActivity implements View.OnCli
                             time.delete(0, time.length());
                         }
                         tvTime.setText(time.append(String.valueOf(hour)).append(":").append(String.valueOf(minute)));
+                        startTime = hour + ":" + minute + ":" + "00";
                         dialog.dismiss();
                     }
                 });
@@ -290,6 +277,7 @@ public class EventCreateActivity extends AppCompatActivity implements View.OnCli
                             time.delete(0, time.length());
                         }
                         tv1Time.setText(time.append(String.valueOf(hour)).append(":").append(String.valueOf(minute)));
+                        endTime = hour + ":" + minute + ":" + "00";
                         dialog.dismiss();
                     }
                 });
