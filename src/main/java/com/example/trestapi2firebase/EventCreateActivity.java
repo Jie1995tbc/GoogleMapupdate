@@ -1,25 +1,34 @@
 package com.example.trestapi2firebase;
 
+import android.app.ProgressDialog;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.location.Geocoder;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
+import android.webkit.MimeTypeMap;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.TimePicker;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -34,12 +43,21 @@ import com.example.trestapi2firebase.model.Start;
 import com.example.trestapi2firebase.model.Text;
 import com.example.trestapi2firebase.model.TopLeft;
 import com.example.trestapi2firebase.model.Venue;
+import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.OnProgressListener;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.StorageTask;
+import com.google.firebase.storage.UploadTask;
+import com.squareup.picasso.Picasso;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -47,10 +65,13 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 //import android.location.Address;
 
 public class EventCreateActivity extends AppCompatActivity implements View.OnClickListener, DatePicker.OnDateChangedListener, TimePicker.OnTimeChangedListener {
+    private static final int PICK_IMAGE_REQUEST = 1;
+    final String TAG = "Geocoder";
     private Context context;
     private LinearLayout llDate, llTime, ll1Date, ll1Time;
     private TextView tvDate, tvTime, tv1Date, tv1Time;
@@ -62,9 +83,14 @@ public class EventCreateActivity extends AppCompatActivity implements View.OnCli
     private String endTime;
     private EditText editText;
     private EditText edit_event_title, edit_description;
-    private EditText edit_quantity, edit_price;
 
-    final String TAG = "Geocoder";
+    private Button uploadButton;
+    private Button mChooseButton;
+    private ImageView mImageView;
+    private Uri imageUri;
+
+
+
 
     //save inforemation of the Address
     private String locationLat;
@@ -76,17 +102,43 @@ public class EventCreateActivity extends AppCompatActivity implements View.OnCli
     //subCategory
     private Spinner spinner;
     private String subCategoryId;
+
     //set
     private FirebaseFirestore db = FirebaseFirestore.getInstance();
     //listen id
     private DocumentReference idUpdate = db.collection("id_update").document("idIncrease");
+    //changed time
+    private String changedTime;
 
-    //private String id = db.collection("user").getId();
+
+
+    FirebaseStorage storage;
+    StorageReference storageReference;
+
+    private String tempUrl;
+
+
+
+
+
+
+    private StorageTask mUploadTask;
+
+    private ProgressBar mProgressBar;
+
+    private String saveUrl;
+
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_event_create);
+
+        //init firebase
+        storage = FirebaseStorage.getInstance();
+        storageReference = storage.getReference();
 
         Calendar calendar = Calendar.getInstance();
         int year_now = calendar.get(Calendar.YEAR);
@@ -95,6 +147,9 @@ public class EventCreateActivity extends AppCompatActivity implements View.OnCli
         int hour_now = calendar.get(Calendar.HOUR_OF_DAY);
         int minute_now = calendar.get(Calendar.MINUTE);
         int second_now = calendar.get(Calendar.SECOND);
+
+        changedTime = year_now + "-" + month_now + "-" + day_now + "T" + hour_now + ":" + minute_now + ":" + second_now + "Z";
+
 
         Log.d(TAG,"NOW Time: " + year_now + "/" + month_now + "/" + day_now + ":" + hour_now + minute_now + second_now);
 
@@ -228,6 +283,92 @@ public class EventCreateActivity extends AppCompatActivity implements View.OnCli
             }
         });
 
+        uploadButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                uploadImage();
+            }
+        });
+
+    }
+
+    private void uploadImage() {
+        if (imageUri != null) {
+            final ProgressDialog progressDialog = new ProgressDialog(this);
+            progressDialog.setTitle("uploading...");
+            progressDialog.show();
+
+            final StorageReference ref = storageReference.child("image/" + UUID.randomUUID().toString());
+            ref.putFile(imageUri)
+                    .addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+                        @Override
+                        public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                            progressDialog.dismiss();
+                            Toast.makeText(EventCreateActivity.this,"Upload",Toast.LENGTH_SHORT).show();
+                            ref.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
+                                @Override
+                                public void onSuccess(Uri uri) {
+                                    saveUrl = String.valueOf(uri);
+                                    Log.d(TAG,"GetDownLoadUrl:" + saveUrl);
+
+                                }
+                            }).addOnFailureListener(new OnFailureListener() {
+                                @Override
+                                public void onFailure(@NonNull Exception e) {
+                                    Log.d(TAG,e.getMessage());
+                                }
+                            });
+
+
+
+
+                        }
+                    })
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            progressDialog.dismiss();
+                            Toast.makeText(EventCreateActivity.this,"Failed",Toast.LENGTH_SHORT).show();
+                        }
+                    })
+                    .addOnProgressListener(new OnProgressListener<UploadTask.TaskSnapshot>() {
+                        @Override
+                        public void onProgress(@NonNull UploadTask.TaskSnapshot taskSnapshot) {
+                            double progress = (100.0 * taskSnapshot.getBytesTransferred()/taskSnapshot.getTotalByteCount());
+                            progressDialog.setMessage("Uploaded" + (int)progress + "%");
+
+                        }
+                    });
+            //Log.d(TAG,"DownLoad: " + ref.getDownloadUrl().toString());
+            //ref.getDownloadUrl().getResult();
+
+//            Map<String,Object> temp = new HashMap<>();
+//            temp.put("urltest",tempUrl);
+//            db.collection("id_update").document("idIncrease").set(temp)
+//                    .addOnSuccessListener(new OnSuccessListener<Void>() {
+//                        @Override
+//                        public void onSuccess(Void aVoid) {
+//                            Log.d(TAG,"URLIMAGE");
+//
+//                        }
+//                    })
+//                    .addOnFailureListener(new OnFailureListener() {
+//                        @Override
+//                        public void onFailure(@NonNull Exception e) {
+//
+//                        }
+//                    });
+            ////////////////////////
+            //mUploadTask = ref.putFile(imageUri);
+
+
+
+
+
+            ///////////////////////
+
+
+        }
     }
 
     private void initDateTime() {
@@ -256,10 +397,12 @@ public class EventCreateActivity extends AppCompatActivity implements View.OnCli
 
         edit_event_title = findViewById(R.id.editText);
         edit_description = findViewById(R.id.input_description);
-        edit_quantity = findViewById(R.id.input_quantity);
-        edit_price = findViewById(R.id.input_price);
         editText = findViewById(R.id.input_search);
         spinner = findViewById(R.id.spinner_category);
+        mChooseButton = findViewById(R.id.choose_button);
+        mImageView = findViewById(R.id.event_imageview);
+        mProgressBar = findViewById(R.id.progress_bar);
+        uploadButton = findViewById(R.id.upload_button);
     }
 
 
@@ -285,19 +428,19 @@ public class EventCreateActivity extends AppCompatActivity implements View.OnCli
 
         Text name = new Text(event_title,"text");
 
-        Original original = new Original(1255,"http://",1129);
+        Original original = new Original(1255,saveUrl,1129);
 
         TopLeft topLeft = new TopLeft(247,0);
 
         CropMask cropMask = new CropMask(1285,topLeft,2500);
 
-        Logo logo = new Logo("2",cropMask,"#989b72",true,"76264781",original,"http://github.com");
+        Logo logo = new Logo("2",cropMask,"#989b72",true,"76264781",original,saveUrl);
 
         End end = new End(endDate + "T" + endTime,"America","2019-11-24T 16:00:00Z");
 
         Text description1 = new Text(description,"text");
 
-        Event event = new Event(name,description1,Long.toString(idSave + 1),"http://",start,end,null,null,null,null,14,false,
+        Event event = new Event(name,description1,Long.toString(idSave + 1),"http://",start,end,null,null,changedTime,null,14,false,
                 "continue","USD",false,false,false,45,false,false,"Boston",false,"set",false,false,"invest",
                 false,false,false,false,"Boston",false,"3.0","summary","34567123","2341234","231424","108",subCategoryId,
                 "87964","http://",false,venue,logo);
@@ -351,6 +494,80 @@ public class EventCreateActivity extends AppCompatActivity implements View.OnCli
         startActivity(intent);
 
     }
+    //intent to the file in ur phone
+    public void toImageFile(View v) {
+        Intent intent = new Intent();
+        intent.setType("image/*");
+        intent.setAction(Intent.ACTION_GET_CONTENT);
+        startActivityForResult(intent,PICK_IMAGE_REQUEST);
+    }
+    private String getFileExtension(Uri uri) {
+        ContentResolver cR = getContentResolver();
+        MimeTypeMap mime = MimeTypeMap.getSingleton();
+        return mime.getExtensionFromMimeType(cR.getType(uri));
+    }
+    // upload imageUrl to firebase firestone
+//    private void uploadFile() {
+//        if (imageUri != null) {
+//            StorageReference fileReference = mStorageRef.child(System.currentTimeMillis()
+//                    + "." + getFileExtension(imageUri));
+////
+//            mUploadTask = fileReference.putFile(imageUri)
+//                    .addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+//                        @Override
+//                        public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+//                            Handler handler = new Handler();
+//                            handler.postDelayed(new Runnable() {
+//                                @Override
+//                                public void run() {
+//                                    mProgressBar.setProgress(0);
+//                                }
+//                            }, 500);
+//
+//                            Toast.makeText(EventCreateActivity.this, "Upload successful", Toast.LENGTH_LONG).show();
+//                            Upload upload = new Upload(mEditTextFileName.getText().toString().trim(),
+//                                    taskSnapshot.getDownloadUrl().toString());
+//
+//                            //saveUrl = taskSnapshot.getUploadSessionUri().toString();
+//
+//                            String uploadId = mDatabaseRef.push().getKey();
+//                            mDatabaseRef.child(uploadId).setValue(upload);
+//
+//                            Log.d(TAG,"upoadUri" + saveUrl);
+//                        }
+//                    })
+//                    .addOnFailureListener(new OnFailureListener() {
+//                        @Override
+//                        public void onFailure(@NonNull Exception e) {
+//                            Toast.makeText(EventCreateActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
+//                        }
+//                    })
+//                    .addOnProgressListener(new OnProgressListener<UploadTask.TaskSnapshot>() {
+//                        @Override
+//                        public void onProgress(UploadTask.TaskSnapshot taskSnapshot) {
+//                            double progress = (100.0 * taskSnapshot.getBytesTransferred() / taskSnapshot.getTotalByteCount());
+//                            mProgressBar.setProgress((int) progress);
+//                        }
+//                    });
+//        } else {
+//            Toast.makeText(this, "No file selected", Toast.LENGTH_SHORT).show();
+//
+//        }
+//    }
+
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == PICK_IMAGE_REQUEST && resultCode == RESULT_OK && data != null
+        && data.getData() != null) {
+            imageUri = data.getData();
+            Picasso.get().load(imageUri).into(mImageView);
+        }
+
+        Log.d(TAG,"IMAGEURI" + imageUri.getPath());
+    }
 
     public void update(View v) {
         String event_title = edit_event_title.getText().toString();
@@ -387,7 +604,7 @@ public class EventCreateActivity extends AppCompatActivity implements View.OnCli
 
         Text description1 = new Text(description,"text");
 
-        Event event = new Event(name,description1,Long.toString(idSave),"http://",start,end,null,null,null,null,14,false,
+        Event event = new Event(name,description1,Long.toString(idSave),"http://",start,end,null,null,changedTime,null,14,false,
                 "continue","USD",false,false,false,45,false,false,"Boston",false,"set",false,false,"invest",
                 false,false,false,false,"Boston",false,"3.0","summary","34567123","2341234","231424","108",subCategoryId,
                 "87964","http://",false,venue,logo);
@@ -612,17 +829,4 @@ public class EventCreateActivity extends AppCompatActivity implements View.OnCli
         }
     }
 
-//    @Override
-//    public void onSaveInstanceState(@NonNull Bundle outState) {
-//        super.onSaveInstanceState(outState);
-//        outState.putString("event_title",edit_event_title.getText().toString());
-//
-//    }
-//
-//    @Override
-//    protected void onRestoreInstanceState(@NonNull Bundle savedInstanceState) {
-//        super.onRestoreInstanceState(savedInstanceState);
-//        String title = savedInstanceState.getString("event_title");
-//        edit_event_title.setText(title);
-//    }
 }
