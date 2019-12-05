@@ -428,7 +428,7 @@ public class EventCreateActivity extends AppCompatActivity implements View.OnCli
         super.onActivityResult(requestCode, resultCode, data);
 
         if (requestCode == PICK_IMAGE_REQUEST && resultCode == RESULT_OK && data != null
-        && data.getData() != null) {
+                && data.getData() != null) {
             imageUri = data.getData();
             Picasso.get().load(imageUri).into(mImageView);
         }
