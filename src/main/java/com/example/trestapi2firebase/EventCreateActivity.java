@@ -1,19 +1,16 @@
 package com.example.trestapi2firebase;
 
 import android.app.ProgressDialog;
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.location.Geocoder;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
-import android.webkit.MimeTypeMap;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -21,7 +18,6 @@ import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ProgressBar;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.TimePicker;
@@ -43,21 +39,17 @@ import com.example.trestapi2firebase.model.Start;
 import com.example.trestapi2firebase.model.Text;
 import com.example.trestapi2firebase.model.TopLeft;
 import com.example.trestapi2firebase.model.Venue;
-import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.OnProgressListener;
 import com.google.firebase.storage.StorageReference;
-import com.google.firebase.storage.StorageTask;
 import com.google.firebase.storage.UploadTask;
 import com.squareup.picasso.Picasso;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -67,7 +59,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-//import android.location.Address;
 
 public class EventCreateActivity extends AppCompatActivity implements View.OnClickListener, DatePicker.OnDateChangedListener, TimePicker.OnTimeChangedListener {
     private static final int PICK_IMAGE_REQUEST = 1;
@@ -83,15 +74,9 @@ public class EventCreateActivity extends AppCompatActivity implements View.OnCli
     private String endTime;
     private EditText editText;
     private EditText edit_event_title, edit_description;
-
     private Button uploadButton;
-    private Button mChooseButton;
     private ImageView mImageView;
     private Uri imageUri;
-
-
-
-
     //save inforemation of the Address
     private String locationLat;
     private String locationLng;
@@ -102,41 +87,24 @@ public class EventCreateActivity extends AppCompatActivity implements View.OnCli
     //subCategory
     private Spinner spinner;
     private String subCategoryId;
-
     //set
     private FirebaseFirestore db = FirebaseFirestore.getInstance();
     //listen id
     private DocumentReference idUpdate = db.collection("id_update").document("idIncrease");
     //changed time
     private String changedTime;
-
-
-
+    //save imageUrl
+    private String saveUrl;
+    //cloud storage
     FirebaseStorage storage;
     StorageReference storageReference;
-
-    private String tempUrl;
-
-
-
-
-
-
-    private StorageTask mUploadTask;
-
-    private ProgressBar mProgressBar;
-
-    private String saveUrl;
-
-
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_event_create);
 
-        //init firebase
+        //init Storage
         storage = FirebaseStorage.getInstance();
         storageReference = storage.getReference();
 
@@ -150,9 +118,7 @@ public class EventCreateActivity extends AppCompatActivity implements View.OnCli
 
         changedTime = year_now + "-" + month_now + "-" + day_now + "T" + hour_now + ":" + minute_now + ":" + second_now + "Z";
 
-
         Log.d(TAG,"NOW Time: " + year_now + "/" + month_now + "/" + day_now + ":" + hour_now + minute_now + second_now);
-
 
         List<Category> categoryList = new ArrayList<>();
 
@@ -289,7 +255,6 @@ public class EventCreateActivity extends AppCompatActivity implements View.OnCli
                 uploadImage();
             }
         });
-
     }
 
     private void uploadImage() {
@@ -318,10 +283,6 @@ public class EventCreateActivity extends AppCompatActivity implements View.OnCli
                                     Log.d(TAG,e.getMessage());
                                 }
                             });
-
-
-
-
                         }
                     })
                     .addOnFailureListener(new OnFailureListener() {
@@ -336,38 +297,8 @@ public class EventCreateActivity extends AppCompatActivity implements View.OnCli
                         public void onProgress(@NonNull UploadTask.TaskSnapshot taskSnapshot) {
                             double progress = (100.0 * taskSnapshot.getBytesTransferred()/taskSnapshot.getTotalByteCount());
                             progressDialog.setMessage("Uploaded" + (int)progress + "%");
-
                         }
                     });
-            //Log.d(TAG,"DownLoad: " + ref.getDownloadUrl().toString());
-            //ref.getDownloadUrl().getResult();
-
-//            Map<String,Object> temp = new HashMap<>();
-//            temp.put("urltest",tempUrl);
-//            db.collection("id_update").document("idIncrease").set(temp)
-//                    .addOnSuccessListener(new OnSuccessListener<Void>() {
-//                        @Override
-//                        public void onSuccess(Void aVoid) {
-//                            Log.d(TAG,"URLIMAGE");
-//
-//                        }
-//                    })
-//                    .addOnFailureListener(new OnFailureListener() {
-//                        @Override
-//                        public void onFailure(@NonNull Exception e) {
-//
-//                        }
-//                    });
-            ////////////////////////
-            //mUploadTask = ref.putFile(imageUri);
-
-
-
-
-
-            ///////////////////////
-
-
         }
     }
 
@@ -394,31 +325,21 @@ public class EventCreateActivity extends AppCompatActivity implements View.OnCli
         ll1Date.setOnClickListener(this);
         ll1Time.setOnClickListener(this);
 
-
         edit_event_title = findViewById(R.id.editText);
         edit_description = findViewById(R.id.input_description);
         editText = findViewById(R.id.input_search);
         spinner = findViewById(R.id.spinner_category);
-        mChooseButton = findViewById(R.id.choose_button);
         mImageView = findViewById(R.id.event_imageview);
-        mProgressBar = findViewById(R.id.progress_bar);
         uploadButton = findViewById(R.id.upload_button);
     }
 
-
+    //submit button listen
     public void submit(View v){
-
         String event_title = edit_event_title.getText().toString();
         String description = edit_description.getText().toString();
-//        String quantity = edit_quantity.getText().toString();
-//        String price = edit_price.getText().toString();
-//        String start_date = tvDate.getText().toString();
-//        String start_time = tvTime.getText().toString();
-//        String end_date = tv1Date.getText().toString();
-//        String end_time = tv1Time.getText().toString();
+
         String[] tagArray = {"hello", "hi"};
         List<String> tag = Arrays.asList(tagArray);
-
 
         Address address = new Address("address1","address2","Boston","U.S",postalCode,
                 countryCode,locationLat,locationLng,null,null,tag);
@@ -494,67 +415,13 @@ public class EventCreateActivity extends AppCompatActivity implements View.OnCli
         startActivity(intent);
 
     }
-    //intent to the file in ur phone
+    //intent to the file in the phone
     public void toImageFile(View v) {
         Intent intent = new Intent();
         intent.setType("image/*");
         intent.setAction(Intent.ACTION_GET_CONTENT);
         startActivityForResult(intent,PICK_IMAGE_REQUEST);
     }
-    private String getFileExtension(Uri uri) {
-        ContentResolver cR = getContentResolver();
-        MimeTypeMap mime = MimeTypeMap.getSingleton();
-        return mime.getExtensionFromMimeType(cR.getType(uri));
-    }
-    // upload imageUrl to firebase firestone
-//    private void uploadFile() {
-//        if (imageUri != null) {
-//            StorageReference fileReference = mStorageRef.child(System.currentTimeMillis()
-//                    + "." + getFileExtension(imageUri));
-////
-//            mUploadTask = fileReference.putFile(imageUri)
-//                    .addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
-//                        @Override
-//                        public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
-//                            Handler handler = new Handler();
-//                            handler.postDelayed(new Runnable() {
-//                                @Override
-//                                public void run() {
-//                                    mProgressBar.setProgress(0);
-//                                }
-//                            }, 500);
-//
-//                            Toast.makeText(EventCreateActivity.this, "Upload successful", Toast.LENGTH_LONG).show();
-//                            Upload upload = new Upload(mEditTextFileName.getText().toString().trim(),
-//                                    taskSnapshot.getDownloadUrl().toString());
-//
-//                            //saveUrl = taskSnapshot.getUploadSessionUri().toString();
-//
-//                            String uploadId = mDatabaseRef.push().getKey();
-//                            mDatabaseRef.child(uploadId).setValue(upload);
-//
-//                            Log.d(TAG,"upoadUri" + saveUrl);
-//                        }
-//                    })
-//                    .addOnFailureListener(new OnFailureListener() {
-//                        @Override
-//                        public void onFailure(@NonNull Exception e) {
-//                            Toast.makeText(EventCreateActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
-//                        }
-//                    })
-//                    .addOnProgressListener(new OnProgressListener<UploadTask.TaskSnapshot>() {
-//                        @Override
-//                        public void onProgress(UploadTask.TaskSnapshot taskSnapshot) {
-//                            double progress = (100.0 * taskSnapshot.getBytesTransferred() / taskSnapshot.getTotalByteCount());
-//                            mProgressBar.setProgress((int) progress);
-//                        }
-//                    });
-//        } else {
-//            Toast.makeText(this, "No file selected", Toast.LENGTH_SHORT).show();
-//
-//        }
-//    }
-
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
@@ -566,23 +433,14 @@ public class EventCreateActivity extends AppCompatActivity implements View.OnCli
             Picasso.get().load(imageUri).into(mImageView);
         }
 
-        Log.d(TAG,"IMAGEURI" + imageUri.getPath());
     }
-
+    //update button listen
     public void update(View v) {
         String event_title = edit_event_title.getText().toString();
         String description = edit_description.getText().toString();
-//        String quantity = edit_quantity.getText().toString();
-//        String price = edit_price.getText().toString();
-//        String start_date = tvDate.getText().toString();
-//        String start_time = tvTime.getText().toString();
-//        String end_date = tv1Date.getText().toString();
-//        String end_time = tv1Time.getText().toString();
-
 
         String[] tagArray = {"hello", "hi"};
         List<String> tag = Arrays.asList(tagArray);
-
 
         Address address = new Address("address1","address2","Boston","U.S",postalCode,
                 countryCode,locationLat,locationLng,null,null,tag);
@@ -639,7 +497,6 @@ public class EventCreateActivity extends AppCompatActivity implements View.OnCli
                 });
 
     }
-
 
     @Override
     public void onClick(View v) {
@@ -824,8 +681,6 @@ public class EventCreateActivity extends AppCompatActivity implements View.OnCli
             locationLng = "" + address.getLongitude();
             countryCode = address.getCountryCode();
             postalCode = address.getPostalCode();
-
-
         }
     }
 
