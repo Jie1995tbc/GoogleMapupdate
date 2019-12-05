@@ -6,6 +6,7 @@
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    tools:context=".EventCreateActivity"
     >
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -245,105 +246,61 @@
             android:hint="Description..."
             app:layout_constraintTop_toBottomOf="@id/description_create"
             app:layout_constraintLeft_toLeftOf="parent"
-
             />
 
         <ImageView
-            android:id="@+id/ticket_create"
-            android:layout_width="50dp"
-            android:layout_height="38dp"
+            android:id="@+id/event_image_icon"
+            android:layout_width="46dp"
+            android:layout_height="32dp"
+            android:background="@drawable/ic_event_image"
             app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/input_description" />
+        <TextView
+            android:id="@+id/event_textview"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintLeft_toRightOf="@id/event_image_icon"
             app:layout_constraintTop_toBottomOf="@+id/input_description"
             android:layout_marginStart="10dp"
-            android:layout_marginTop="10dp"
-            android:background="@drawable/ticket"/>
-
-        <TextView
-            android:id="@+id/ticket_textview"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:layout_constraintTop_toBottomOf="@+id/input_description"
-            app:layout_constraintLeft_toRightOf="@+id/ticket_create"
-            android:layout_marginTop="10dp"
-            android:layout_marginStart="24dp"
-            android:text="@string/ticket"
-            android:textSize="70px"
+            android:text = "Main Event Image"
+            android:textSize="60px"
             />
 
-        <TextView
-            android:id="@+id/quantity_create"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:layout_constraintTop_toBottomOf="@+id/ticket_textview"
+        <ImageView
+            android:id="@+id/event_imageview"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            app:layout_constraintTop_toBottomOf="@+id/event_textview"
             app:layout_constraintLeft_toLeftOf="parent"
+            />
+        <Button
+            android:id="@+id/choose_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toBottomOf="@id/event_imageview"
+            app:layout_constraintLeft_toLeftOf="parent"
+            android:text="Choose Image"
             android:layout_marginTop="15dp"
-            android:layout_marginStart="24dp"
-            android:text="@string/quantity"
-            android:textSize="60px"
+            android:onClick="toImageFile"
+            android:background="@drawable/textview_boarder"
             />
 
-        <EditText
-            android:id="@+id/input_quantity"
-            android:layout_width="50dp"
-            android:layout_height="30dp"
-            android:layout_marginStart="190dp"
-            android:layout_marginTop="17dp"
-            android:background="@drawable/textview_boarder"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/ticket_textview" />
-
-        <TextView
-            android:id="@+id/price_create"
-            android:layout_width="wrap_content"
+        <Button
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:layout_constraintTop_toBottomOf="@+id/quantity_create"
+            app:layout_constraintTop_toBottomOf="@+id/choose_button"
             app:layout_constraintLeft_toLeftOf="parent"
-            android:layout_marginTop="10dp"
-            android:layout_marginStart="38dp"
-            android:text="@string/price"
-            android:textSize="60px"
-            />
-        <TextView
-            android:id="@+id/organizer_textview"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/price_create"
-            android:layout_marginTop="10dp"
-            android:layout_marginStart="24dp"
-            android:text="Organizer"
-            android:textSize="60px"
+            android:id="@+id/upload_button"
+            android:text = "Upload"
+            android:background="@drawable/textview_boarder"
+            android:layout_marginTop="5dp"
             />
 
-        <EditText
-            android:id="@+id/input_price"
-            android:layout_width="50dp"
-            android:layout_height="30dp"
-            android:layout_marginStart="190dp"
-            android:layout_marginTop="8dp"
-            android:background="@drawable/textview_boarder"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/input_quantity"
-            android:inputType="number"/>
-        <EditText
-            android:id="@+id/organizerId"
-            android:layout_width="360dp"
-            android:layout_height="30dp"
-            app:layout_constraintTop_toBottomOf="@+id/organizer_textview"
-            app:layout_constraintLeft_toLeftOf="parent"
-            android:layout_marginStart="24dp"
-            android:layout_marginTop="10dp"
-            android:hint="Who is organizing..."
-            android:gravity="center"
-            android:background="@drawable/textview_boarder"
-            android:textSize="60px"
-
-            />
         <Button
             android:id="@+id/submit_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            app:layout_constraintTop_toBottomOf="@+id/organizerId"
+            app:layout_constraintTop_toBottomOf="@+id/upload_button"
             app:layout_constraintRight_toRightOf="parent"
             android:background="@drawable/textview_boarder"
             android:text="Submit"
@@ -356,7 +313,7 @@
             android:id="@+id/update_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            app:layout_constraintTop_toBottomOf="@id/organizerId"
+            app:layout_constraintTop_toBottomOf="@id/upload_button"
             app:layout_constraintRight_toLeftOf="@+id/submit_button"
             android:layout_marginTop="20dp"
             android:background="@drawable/textview_boarder"
